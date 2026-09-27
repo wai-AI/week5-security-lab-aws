@@ -1,0 +1,31 @@
+BEGIN;
+
+CREATE ROLE app_user
+  LOGIN
+  NOSUPERUSER
+  NOCREATEDB
+  NOCREATEROLE
+  NOREPLICATION;
+
+GRANT CONNECT ON DATABASE appdb TO app_user;
+
+CREATE SCHEMA app;
+
+CREATE TABLE app.notes (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  owner_sub text NOT NULL,
+  content text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+GRANT USAGE ON SCHEMA app TO app_user;
+
+GRANT SELECT, INSERT, UPDATE, DELETE
+  ON TABLE app.notes
+  TO app_user;
+
+GRANT USAGE, SELECT
+  ON ALL SEQUENCES IN SCHEMA app
+  TO app_user;
+
+COMMIT;

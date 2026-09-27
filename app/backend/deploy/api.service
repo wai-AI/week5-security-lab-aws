@@ -1,0 +1,32 @@
+[Unit]
+Description=Secure SaaS Lab API
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+
+User=app
+Group=app
+WorkingDirectory=/opt/secure-saas-api
+
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/secure-saas-api.env
+
+ExecStart=/opt/node/bin/node /opt/secure-saas-api/server.js
+
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+UMask=0027
+
+StandardOutput=append:/var/log/secure-saas-api/app.log
+StandardError=append:/var/log/secure-saas-api/app.log
+
+[Install]
+WantedBy=multi-user.target

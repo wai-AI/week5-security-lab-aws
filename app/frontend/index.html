@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SaaS Lab — нотатки</title>
+  <style>
+    body {
+      max-width: 680px;
+      margin: 40px auto;
+      padding: 0 20px;
+      font-family: system-ui, sans-serif;
+      background: #f5f6f8;
+      color: #182230;
+    }
+    button, textarea {
+      font: inherit;
+      padding: 10px;
+    }
+    button { cursor: pointer; }
+    textarea {
+      box-sizing: border-box;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    li {
+      background: white;
+      padding: 16px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    ul { padding: 0; list-style: none; }
+    #status { min-height: 24px; }
+  </style>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <h1>Мої нотатки</h1>
+
+  <button id="login" disabled>Увійти</button>
+  <button id="logout" hidden>Вийти</button>
+
+  <p id="status" role="status"></p>
+
+  <section id="workspace" hidden>
+    <form id="note-form">
+      <textarea
+        id="content"
+        rows="4"
+        maxlength="2000"
+        placeholder="Нова нотатка"
+        aria-label="Текст нотатки"
+        required
+      ></textarea>
+      <button id="save" type="submit">Зберегти</button>
+    </form>
+
+    <h2>Збережені нотатки</h2>
+    <ul id="notes"></ul>
+    <h2>Мої файли</h2>
+     <p>До 4 КіБ. Повторне завантаження з тим самим ім’ям замінить файл.</p>
+
+     <form id="file-form">
+       <input id="file-input" type="file" required aria-label="Вибрати файл">
+       <button id="upload" type="submit">Завантажити</button>
+     </form>
+
+   <ul id="files"></ul> 
+ </section>
+</body>
+</html>

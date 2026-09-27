@@ -1,0 +1,74 @@
+#!/bin/bash
+set -euo pipefail
+
+dnf install -y nginx openssl tar xz
+
+curl -fsSL \
+  'https://nodejs.org/dist/v${node_version}/node-v${node_version}-linux-x64.tar.xz' \
+  -o /tmp/node.tar.xz
+
+echo '${node_sha256}  /tmp/node.tar.xz' | sha256sum -c -
+
+mkdir -p /opt/node
+tar -xJf /tmp/node.tar.xz -C /opt/node --strip-components=1
+
+export PATH="/opt/node/bin:$PATH"
+export AWS_DEFAULT_REGION='${aws_region}'
+
+useradd --create-home --shell /sbin/nologin app
+mkdir -p /opt/secure-saas-api /var/log/secure-saas-api
+
+aws s3 cp \
+  's3://${deployment_bucket}/${backend_key}' \
+  /tmp/backend.tar.gz \
+  --only-show-errors
+
+echo '${backend_sha256}  /tmp/backend.tar.gz' | sha256sum -c -
+
+tar -xzf /tmp/backend.tar.gz \
+  -C /opt/secure-saas-api \
+  --no-same-owner
+
+chown -R app:app /opt/secure-saas-api
+
+runuser -u app -- env PATH="$PATH" \
+  npm ci --prefix /opt/secure-saas-api \
+  --omit=dev --ignore-scripts --no-audit --no-fund
+
+chown -R root:root /opt/secure-saas-api
+
+curl -fsSL \
+  'https://truststore.pki.rds.amazonaws.com/${aws_region}/${aws_region}-bundle.pem' \
+  -o /opt/secure-saas-api/rds-ca.pem
+
+cat > /etc/secure-saas-api.env <<'EOF'
+AWS_REGION=${aws_region}
+DB_HOST=${db_host}
+APP_DB_SECRET_ARN=${app_db_secret_arn}
+RDS_CA_PATH=/opt/secure-saas-api/rds-ca.pem
+COGNITO_USER_POOL_ID=${cognito_user_pool_id}
+COGNITO_CLIENT_ID=${cognito_client_id}
+CLIENT_FILES_BUCKET=${client_files_bucket}
+EOF
+
+chmod 600 /etc/secure-saas-api.env
+
+mkdir -p /etc/nginx/tls
+
+openssl req -x509 -nodes -newkey rsa:2048 \
+  -days 365 \
+  -keyout /etc/nginx/tls/server.key \
+  -out /etc/nginx/tls/server.crt \
+  -subj "/CN=lab-app"
+
+chmod 600 /etc/nginx/tls/server.key
+
+cp /opt/secure-saas-api/deploy/nginx.conf /etc/nginx/nginx.conf
+cp /opt/secure-saas-api/deploy/api.service \
+  /etc/systemd/system/secure-saas-api.service
+
+systemctl daemon-reload
+systemctl enable --now secure-saas-api
+
+nginx -t
+systemctl enable --now nginx
